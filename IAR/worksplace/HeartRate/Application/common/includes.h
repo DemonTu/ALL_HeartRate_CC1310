@@ -32,7 +32,7 @@
 //#include "bsp_spi.h"
 #include "bsp_uart.h"
 #include "OLED_Driver.h"
-
+#include "UserHeartBeatApp.h"
 //user app
 
 #include "UserRfApp.h"
@@ -40,5 +40,6 @@
 
 #include "SystemMasterTask.h"
 #include "OLED_UserApp.h"
+
 #endif	
 

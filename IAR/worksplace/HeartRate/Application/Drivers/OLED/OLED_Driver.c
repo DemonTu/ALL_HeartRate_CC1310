@@ -578,7 +578,7 @@ static void OLEDIICGPIO_Init(void)
 #ifdef IIC_SOFTWARE
 	IICGpioPin = PIN_open(&pinGpioState, IICPinTable);
 #else // Ó²¼þIIC
-	bspI2cInit();
+	//bspI2cInit();
 #endif
 
 }

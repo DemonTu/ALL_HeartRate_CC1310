@@ -15,7 +15,7 @@ static PIN_State ADCPinState;
 PIN_Config ADCpinTable[] =
 {
 	Board_STAT    | PIN_INPUT_EN | PIN_PULLUP | PIN_IRQ_DIS,
-	Board_ADC_BAT | PIN_INPUT_EN | PIN_GPIO_OUTPUT_DIS,	
+	Board_ADC_BAT | PIN_INPUT_DIS| PIN_GPIO_OUTPUT_DIS,	
 	PIN_TERMINATE
 };
 
@@ -24,7 +24,7 @@ static void batteryDetectionInit(void)
 {
 	// ADC    I/O
 	// charge I/O
-	//ADCPinHandle = PIN_open(&ADCPinState, ADCpinTable);
+	ADCPinHandle = PIN_open(&ADCPinState, ADCpinTable);
 }
 
 /*
@@ -80,12 +80,6 @@ void powerKeyScan10ms(void)
 	}
 }
 
-//void powerManegeInit(void)
-//{
-//	batteryDetectionInit();
-//	switchControlInit();
-//}
-
 #if 1
 //===============================================================================================
 /***** Defines *****/
@@ -98,16 +92,16 @@ Task_Struct powerTask;    /* not static so you can see in ROV */
 
 static uint8_t powerTaskStack[POWER_TASK_STACK_SIZE];
 
-static void powerManegeInit(void)
-{
-	batteryDetectionInit();
-	switchControlInit();
-}
-
 static Clock_Struct periodicClock_10ms;
 static Semaphore_Struct mutexPower;
 
-/*  ======== emptyClockFunc ========
+static void powerManegeInit(void)
+{
+	batteryDetectionInit();		// ADC I/O 初始化
+	switchControlInit();        // power key 初始化
+}
+
+/*  ======== powerClockFunc ========
  *  Clock function used by power policy to schedule early wakeups.
  */
 static void powerClockFunc(uintptr_t arg)
@@ -130,30 +124,34 @@ static void powerTaskFunction(UArg arg0, UArg arg1)
 	Clock_Params_init(&clockParams);
     clockParams.period = 0;
     clockParams.startFlag = FALSE;
-    clockParams.arg = 5;
+    clockParams.arg = 5;			// event 
+
 	// Create one-shot clocks for internal periodic events.
-	Clock_construct(&periodicClock_10ms, &powerClockFunc,
-	                  100000, &clockParams);
-	Clock_stop(Clock_handle(&periodicClock_10ms));
+ 	Clock_construct(&periodicClock_10ms, &powerClockFunc, arg0, &clockParams); // 10ms
+ 	
+	Clock_start(Clock_handle(&periodicClock_10ms));
 	
 	while(1)
 	{
 		Semaphore_pend(Semaphore_handle(&mutexPower), BIOS_WAIT_FOREVER);
         Clock_start(Clock_handle(&periodicClock_10ms));
 		
+		//OLED_ShowString(0, 16, "keyscan");
         powerKeyScan10ms();
-		uartWriteDebug("ADC\r\n", 5);
-		//Task_sleep(3000);
+		//uartWriteDebug("ADC\r\n", 5);
 	}
 }
 
+/*
+ * Power Task Create 
+ */
 void powerManegeTaskInit(void)
 {
 	Task_Params_init(&powerTaskParams);
     powerTaskParams.stackSize = POWER_TASK_STACK_SIZE;
     powerTaskParams.priority = POWER_TASK_PRIORITY;
     powerTaskParams.stack = &powerTaskStack;
-    powerTaskParams.arg0 = (UInt)1000000;
+    powerTaskParams.arg0 = (UInt)100000;
 
     Task_construct(&powerTask, powerTaskFunction, &powerTaskParams, NULL);
 }

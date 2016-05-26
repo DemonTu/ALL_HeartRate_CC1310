@@ -2198,6 +2198,9 @@
         <name>$PROJ_DIR$\Application\userApp\SystemMasterTask.c</name>
       </file>
       <file>
+        <name>$PROJ_DIR$\Application\userApp\UserHeartBeatApp.c</name>
+      </file>
+      <file>
         <name>$PROJ_DIR$\Application\userApp\userPowerManage.c</name>
       </file>
       <file>

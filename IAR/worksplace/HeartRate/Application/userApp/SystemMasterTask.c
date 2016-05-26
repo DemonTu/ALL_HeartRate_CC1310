@@ -52,28 +52,28 @@ static void systemMasterTaskFunc(UArg arg0, UArg arg1)
 	
 	Semaphore_Params semParamsMutex;
     
-   // OLED_Init();
-	//OLED_ShowString(0, 0, "Heart Check");
+    uartWriteDebug("system", 6);
+
 	
     // Create protection semaphore
 	Semaphore_Params_init(&semParamsMutex);
 	semParamsMutex.mode = Semaphore_Mode_BINARY;
 	Semaphore_construct(&mutexMaster, 1, &semParamsMutex);
 
-//	systemClockCreate(&periodicClock_10ms, 10, TIME10MS_EVENT);
-//	systemClockCreate(&periodicClock_100ms, 100, TIME100MS_EVENT);
-//	systemClockCreate(&periodicClock_500ms, 500, TIME500MS_EVENT);
+	systemClockCreate(&periodicClock_10ms, 10, TIME10MS_EVENT);
+	systemClockCreate(&periodicClock_100ms, 100, TIME100MS_EVENT);
+	systemClockCreate(&periodicClock_500ms, 500, TIME500MS_EVENT);
 	systemClockCreate(&periodicClock_1s, 1000, TIME1S_EVENT);
 	
-//	Clock_stop(Clock_handle(&periodicClock_10ms));
-//	Clock_stop(Clock_handle(&periodicClock_100ms));
-//	Clock_stop(Clock_handle(&periodicClock_500ms));
+	Clock_start(Clock_handle(&periodicClock_10ms));
+	Clock_start(Clock_handle(&periodicClock_100ms));
+	Clock_start(Clock_handle(&periodicClock_500ms));
 	Clock_start(Clock_handle(&periodicClock_1s));
 	
 	while(1)
 	{
 		Semaphore_pend(Semaphore_handle(&mutexMaster), BIOS_WAIT_FOREVER);
-#if 0
+#if 1
 		if (systemEvent & TIME10MS_EVENT)
 		{
 			systemEvent &= ~TIME10MS_EVENT;
@@ -91,20 +91,16 @@ static void systemMasterTaskFunc(UArg arg0, UArg arg1)
 			systemEvent &= ~TIME500MS_EVENT;
 			Clock_start(Clock_handle(&periodicClock_500ms));
 			
-			OLED_Refresh_Gram();
+			//OLED_Refresh_Gram();
 		}
 		
 		if (systemEvent & TIME1S_EVENT)
 		{
 			systemEvent &= ~TIME1S_EVENT;
 			Clock_start(Clock_handle(&periodicClock_1s));
-
 			bspUartWrite("OLED", 4);
 		}
     #endif    
-    Clock_start(Clock_handle(&periodicClock_1s));    
-    bspUartWrite("oled", 4);
- //   delay_ms(1000);
 	}
 
 }
