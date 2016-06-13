@@ -23,7 +23,7 @@ static void TaskFunction(UArg arg0, UArg arg1)
 	Semaphore_Params semParamsMutex;
     
     OLED_Init();
-	OLED_ShowString(0, 0, "Heart Check");
+	OLED_ShowString(0, 0, "HR");
 	
     // Create protection semaphore
 	Semaphore_Params_init(&semParamsMutex);

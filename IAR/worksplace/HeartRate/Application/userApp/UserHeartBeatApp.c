@@ -1,4 +1,5 @@
 #include "includes.h"
+
 /********************************************************************************
  * heart Beat driver interface 
  *
@@ -94,7 +95,15 @@ static uint8_t heartBeatInterfaceInit(void)
 	if (ACK != temp)
 	{
 		uartWriteDebug("stno", 4);
-		return 1;
+		
+		sendConmandStart();	
+		temp = getACK();
+		if (ACK != temp)
+		{
+			uartWriteDebug("rtno", 4);
+			return 1;
+		}	
+		//return 1;
 	}	
 	return 0;
 }
@@ -265,6 +274,8 @@ const uint8_t getRegister[]=
 	
 	CALS,
 
+	VO2,
+
 };
 
 /*
@@ -282,28 +293,31 @@ static void HRTaskFunc(UArg arg0, UArg arg1)
 		sendConmandGet((uint8_t *)getRegister, sizeof(getRegister));
 		
 		ReceiveConmandGetData(registerData);
-
-		sensorData.stepRate   = (registerData[3+7*3+1]<<8)|(registerData[3+7*3+2]);
-		sensorData.distance   = (registerData[3+8*3+1]<<8)|(registerData[3+8*3+2]);
-		sensorData.totalSteps = (registerData[3+9*3+1]<<8)|(registerData[3+9*3+2]);
-		sensorData.speed      = (registerData[3+10*3+1]<<8)|(registerData[3+10*3+2]);
-		sensorData.cals       = (registerData[3+11*3+1]<<8)|(registerData[3+11*3+2]);
-
-		if ((registerData[3+2*3+1]>0x30) || ((registerData[3+1*3+2]&0x01)==0))
+		if (0x44 == registerData[0])
 		{
-			uint8_t showBuf[20]={0};
-
-			sensorData.heartRate = (registerData[3+5*3+1]<<8)|(registerData[3+5*3+2]);
-			sensorData.heartRateAvg = (registerData[3+6*3+1]<<8)|(registerData[3+6*3+2]);
+			sensorData.stepRate   = (registerData[3+7*3+1]<<8)|(registerData[3+7*3+2]);
+			sensorData.distance   = (registerData[3+8*3+1]<<8)|(registerData[3+8*3+2]);
+			sensorData.totalSteps = (registerData[3+9*3+1]<<8)|(registerData[3+9*3+2]);
+			sensorData.speed      = (registerData[3+10*3+1]<<8)|(registerData[3+10*3+2]);
+			sensorData.cals       = (registerData[3+11*3+1]<<8)|(registerData[3+11*3+2]);
+			sensorData.sVO2		  = (registerData[3+12*3+1]<<8)|(registerData[3+12*3+2]);
 			
-			sprintf((char *)showBuf, "HR: %3dbpm", sensorData.heartRate);
-			OLED_ShowString(0, 16, showBuf);
+			if ((registerData[3+2*3+1]>0x20) || ((registerData[3+1*3+2]&0x01)==0))
+			{
+				//uint8_t showBuf[20]={0};
+
+				sensorData.heartRate = (registerData[3+5*3+1]<<8)|(registerData[3+5*3+2]);
+				sensorData.heartRateAvg = (registerData[3+6*3+1]<<8)|(registerData[3+6*3+2]);
+				systemUserEnqueue(EVENT_SENSOR_SHOW, sizeof(sensorData), (uint8_t *)&sensorData);
+				//sprintf((char *)showBuf, "HR: %3dbpm", sensorData.heartRate);
+				//OLED_ShowString(0, 16, showBuf);
+			}
+			else
+			{
+				systemUserEnqueue(EVENT_SENSOR_HIDE, 0, NULL);
+				//OLED_ShowString(0, 16, "                 ");
+			}
 		}
-		else
-		{
-			OLED_ShowString(0, 16, "                 ");
-		}
-		
 		delay_ms(arg0);
 	}
 }
@@ -316,7 +330,7 @@ void HR_TaskInit(void)
     HRTaskParams.stackSize = HRTASKSTACKSIZE;
     HRTaskParams.priority = 2;
     HRTaskParams.stack = &HRTaskStack;
-    HRTaskParams.arg0 = (UInt)2000;
+    HRTaskParams.arg0 = (UInt)1000;
 
     Task_construct(&HRTask, HRTaskFunc, &HRTaskParams, NULL);
 }
@@ -325,3 +339,12 @@ void HR_GetSensorData(SENSORPARA_STR *snrData)
 {
 	memcpy((char *)snrData, (char *)&sensorData, sizeof(SENSORPARA_STR));
 }
+
+/*
+ * ¹Ø±Õ´«¸ÐÆ÷
+ */
+void HR_CloseSensor(void)
+{
+	sendConmandStop();
+}
+

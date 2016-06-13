@@ -72,17 +72,17 @@
 
 const PIN_Config BoardGpioInitTable[] = {
 
-    Board_POWER   | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,         /* LED initially off             */
-    Board_ON_OFF  | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,         /* LED initially off             */
+//    Board_POWER   | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,         /* LED initially off             */
+//    Board_ON_OFF  | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,         /* LED initially off             */
            /* PT 4110 */
     Board_POST    | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PUSHPULL | PIN_DRVSTR_MIN,  /* External flash chip select    */
 	Board_WAKE	  | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PUSHPULL | PIN_DRVSTR_MIN,  /* External flash chip select	  */
 
-	Board_UART_RX | PIN_INPUT_EN | PIN_PULLDOWN,                                              /* UART RX via debugger back channel */
+	Board_UART_RX | PIN_INPUT_EN       | PIN_PULLDOWN,                                              /* UART RX via debugger back channel */
     Board_UART_TX | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PUSHPULL,                        /* UART TX via debugger back channel */
-                                           /* SPI master out - slave in */
-    Board_STAT    | PIN_INPUT_EN | PIN_PULLDOWN,                                            /* SPI master in - slave out */
-    Board_ADC_BAT | PIN_INPUT_DIS| PIN_GPIO_OUTPUT_DIS,                                             /* SPI clock */
+
+	Board_STAT    | PIN_INPUT_EN       | PIN_PULLUP | PIN_IRQ_DIS,                                            /* SPI master in - slave out */
+//    Board_ADC_BAT | PIN_INPUT_DIS| PIN_GPIO_OUTPUT_DIS,                                             /* SPI clock */
 
     PIN_TERMINATE
 };

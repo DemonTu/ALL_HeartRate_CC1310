@@ -15,6 +15,7 @@
 
 #include <xdc/std.h>
 #include <xdc/runtime/System.h>
+#include <xdc/runtime/Error.h>
 
 /* Drivers */
 #include <ti/drivers/rf/RF.h>
@@ -33,6 +34,12 @@
 #include "bsp_uart.h"
 #include "OLED_Driver.h"
 #include "UserHeartBeatApp.h"
+
+//software tool
+#include "ALSW_BigSmallEnding.h"
+#include "ALSW_CheckSum.h"
+
+
 //user app
 
 #include "UserRfApp.h"
@@ -40,6 +47,7 @@
 
 #include "SystemMasterTask.h"
 #include "OLED_UserApp.h"
+
 
 #endif	
 

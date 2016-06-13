@@ -322,6 +322,9 @@
           <state>C:\work\source\ALL_HeartRate_CC1310\software\IAR\worksplace\HeartRate\Application\Drivers\OLED</state>
           <state>C:\work\source\ALL_HeartRate_CC1310\software\IAR\worksplace\HeartRate\Application\Drivers\I2C</state>
           <state>C:\work\source\ALL_HeartRate_CC1310\software\IAR\worksplace\HeartRate\Application\userApp</state>
+          <state>C:\work\source\ALL_HeartRate_CC1310\software\IAR\worksplace\HeartRate\Application\Drivers\RF</state>
+          <state>C:\work\source\ALL_HeartRate_CC1310\software\IAR\worksplace\HeartRate\Application\Drivers\swTool</state>
+          <state>C:\work\source\ALL_HeartRate_CC1310\software\IAR\worksplace\HeartRate\Application\Drivers\ADC</state>
         </option>
         <option>
           <name>CCStdIncCheck</name>
@@ -609,15 +612,15 @@
         <option>
           <name>OOCOutputFormat</name>
           <version>3</version>
-          <state>0</state>
+          <state>3</state>
         </option>
         <option>
           <name>OCOutputOverride</name>
-          <state>0</state>
+          <state>1</state>
         </option>
         <option>
           <name>OOCOutputFile</name>
-          <state></state>
+          <state>heartBeat.bin</state>
         </option>
         <option>
           <name>OOCCommandLineProducer</name>
@@ -625,7 +628,7 @@
         </option>
         <option>
           <name>OOCObjCopyEnable</name>
-          <state>0</state>
+          <state>1</state>
         </option>
       </data>
     </settings>
@@ -2001,6 +2004,27 @@
     <group>
       <name>Drivers</name>
       <group>
+        <name>ADC</name>
+        <file>
+          <name>$PROJ_DIR$\Application\Drivers\ADC\scif.c</name>
+        </file>
+        <file>
+          <name>$PROJ_DIR$\Application\Drivers\ADC\scif.h</name>
+        </file>
+        <file>
+          <name>$PROJ_DIR$\Application\Drivers\ADC\scif_framework.c</name>
+        </file>
+        <file>
+          <name>$PROJ_DIR$\Application\Drivers\ADC\scif_framework.h</name>
+        </file>
+        <file>
+          <name>$PROJ_DIR$\Application\Drivers\ADC\scif_osal_tirtos.c</name>
+        </file>
+        <file>
+          <name>$PROJ_DIR$\Application\Drivers\ADC\scif_osal_tirtos.h</name>
+        </file>
+      </group>
+      <group>
         <name>I2C</name>
         <file>
           <name>$PROJ_DIR$\Application\Drivers\I2C\bsp_i2c.c</name>
@@ -2019,6 +2043,36 @@
         </file>
         <file>
           <name>$PROJ_DIR$\Application\Drivers\OLED\OLED_Driver.h</name>
+        </file>
+      </group>
+      <group>
+        <name>RF</name>
+        <file>
+          <name>$PROJ_DIR$\Application\Drivers\RF\EasyLink.c</name>
+        </file>
+        <file>
+          <name>$PROJ_DIR$\Application\Drivers\RF\EasyLink.h</name>
+        </file>
+        <file>
+          <name>$PROJ_DIR$\Application\Drivers\RF\smartrf_settings_predefined.c</name>
+        </file>
+        <file>
+          <name>$PROJ_DIR$\Application\Drivers\RF\smartrf_settings_predefined.h</name>
+        </file>
+      </group>
+      <group>
+        <name>SWTOOL</name>
+        <file>
+          <name>$PROJ_DIR$\Application\Drivers\swTool\ALSW_BigSmallEnding.c</name>
+        </file>
+        <file>
+          <name>$PROJ_DIR$\Application\Drivers\swTool\ALSW_BigSmallEnding.h</name>
+        </file>
+        <file>
+          <name>$PROJ_DIR$\Application\Drivers\swTool\ALSW_CheckSum.c</name>
+        </file>
+        <file>
+          <name>$PROJ_DIR$\Application\Drivers\swTool\ALSW_CheckSum.h</name>
         </file>
       </group>
       <group>
@@ -2089,6 +2143,9 @@
       </file>
       <file>
         <name>$PROJ_DIR$\Application\userApp\UserRfApp.c</name>
+      </file>
+      <file>
+        <name>$PROJ_DIR$\Application\userApp\UserRfProtocol.c</name>
       </file>
     </group>
   </group>

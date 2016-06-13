@@ -259,7 +259,7 @@ void bspI2cInit(void)
 
   I2C_init();
   I2C_Params_init(&i2cParams);
-  i2cParams.bitRate = I2C_100kHz;
+  i2cParams.bitRate = I2C_400kHz;
   i2cHandle = I2C_open(Board_I2C, &i2cParams);
 
   // Initialize local variables
