@@ -224,6 +224,7 @@ static void systemMasterTaskFunc(UArg arg0, UArg arg1)
 							powerOn();
 							
 							OLED_ProcessTaskInit();
+							delay_ms(100);
 							HR_TaskInit();
 							RF_TaskInit();
 							systemPowerFlag = 1;
