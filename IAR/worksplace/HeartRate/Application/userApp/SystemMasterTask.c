@@ -116,14 +116,14 @@ void systemUserEnqueue(uint8_t evt, uint8_t datLen, uint8_t *dat)
 // ==================== End Queue ================================================
 
 // ==================== Clock ====================================================
-static Clock_Struct periodicClock_10ms;
+static Clock_Struct periodicClock_1s;
 static Clock_Struct periodicClock_100ms;
 static Clock_Struct periodicClock_500ms;
-static Clock_Struct periodicClock_1s;
+static Clock_Struct periodicClock_SendTimeout;
 
 static Semaphore_Struct mutexMaster;
 
-#define TIME10MS_EVENT         0x0001
+#define TIME350MS_EVENT        0x0001
 #define TIME100MS_EVENT        0x0002
 #define TIME500MS_EVENT        0x0004
 #define TIME1S_EVENT           0x0008
@@ -144,6 +144,12 @@ static void systemMasterClockFuncCB(uintptr_t arg)
 			break;			
 		case TIME1S_EVENT:
 			systemUserEnqueue(EVENT_TIME_1S, 0, NULL);
+			break;
+#ifdef INCLUDE_RF_MASTER
+		case TIME350MS_EVENT:
+			systemUserEnqueue(EVENT_REQUES_OK, 0, NULL);
+			break;
+#endif
 		default:
 			break;
 
@@ -176,12 +182,19 @@ static Task_Params masterTaskParams;
 Task_Struct masterTask;              /* not static so you can see in ROV */
 static uint8_t masterTaskStack[1024];
 
-
+#ifdef INCLUDE_RF_MASTER
+#define DEVICEIDNUM			50
+#endif
 /*
  * 系统任务
  */
 static void systemMasterTaskFunc(UArg arg0, UArg arg1)
 {
+	#ifdef INCLUDE_RF_MASTER
+	uint16_t deviceIDBuf[DEVICEIDNUM];
+	uint16_t devIDNum = 0;	
+    uint16_t devCnt = 0;
+	#endif
 	uint8_t systemShowStateFlag = HeartRate;	// range = sizeof(SENSORPARA_STR)/2 default: heart beat mode
 	Semaphore_Params semParamsMutex;
     
@@ -195,14 +208,12 @@ static void systemMasterTaskFunc(UArg arg0, UArg arg1)
 
 	systemQueue = systemConstructQueue(&systemMsg);
 
-//	systemClockCreate(&periodicClock_100ms, 100, TIME100MS_EVENT);
+	systemClockCreate(&periodicClock_100ms, 100, TIME100MS_EVENT);
 //	systemClockCreate(&periodicClock_500ms, 500, TIME500MS_EVENT);
 	systemClockCreate(&periodicClock_1s, 1000, TIME1S_EVENT);
-	
-//	Clock_start(Clock_handle(&periodicClock_100ms));
-//	Clock_start(Clock_handle(&periodicClock_500ms));
-	Clock_start(Clock_handle(&periodicClock_1s));
-	
+#ifdef INCLUDE_RF_MASTER
+	systemClockCreate(&periodicClock_SendTimeout, 350, TIME100MS_EVENT);
+#endif
 	while(1)
 	{
 	
@@ -222,12 +233,25 @@ static void systemMasterTaskFunc(UArg arg0, UArg arg1)
 						{
 							// long key to power on
 							powerOn();
+							systemParaInit();
+							#ifdef INCLUDE_RF_MASTER
+							// 读取已经配对了几个设备
+							devIDNum = syncParaRead(deviceIDBuf);
+                            devCnt = devIDNum;
+							// 延时启动发送无线请求命令
+							Clock_start(Clock_handle(&periodicClock_SendTimeout));
+							#endif
 							
 							OLED_ProcessTaskInit();
 							delay_ms(100);
 							HR_TaskInit();
 							RF_TaskInit();
 							systemPowerFlag = 1;
+							
+						    /* 启动软件定时器 */	
+							Clock_start(Clock_handle(&periodicClock_100ms));
+						//	Clock_start(Clock_handle(&periodicClock_500ms));
+							Clock_start(Clock_handle(&periodicClock_1s));
 						}
 						else
 						{
@@ -278,7 +302,7 @@ static void systemMasterTaskFunc(UArg arg0, UArg arg1)
 									sprintf((char *)showBuf, " %3dkCal", sensorDataT->cals);
 									break;
 								case VO2:
-									sprintf((char *)showBuf, " %3dml/kg/min", sensorDataT->sVO2*10);
+									sprintf((char *)showBuf, " %3dml/kg*min", sensorDataT->sVO2);
 									break;		
 								default:
 									break;
@@ -333,36 +357,13 @@ static void systemMasterTaskFunc(UArg arg0, UArg arg1)
 						break;
 			//======================================================
 			//=========== 系统定时器 ===============================
-					case EVENT_TIME_100MS:
+					case EVENT_TIME_100MS:		
 						Clock_start(Clock_handle(&periodicClock_100ms));
 						break;
 					case EVENT_TIME_500MS:
 						Clock_start(Clock_handle(&periodicClock_500ms));
 						break;
 					case EVENT_TIME_1S:
-				#ifdef INCLUDE_RF_MASTER
-						{
-							uint8_t sendBufTemp[31]={0};
-							uint16_t sendLen = 0;
-							uint16_t crc;
-
-							sendBufTemp[2] = 0xaa;
-							sendBufTemp[3] = 0x01;
-							/*device ID*/
-							U16_To_BigEndingBuf(&sendBufTemp[4], 0xabcd);
-							/* data length */
-							sendBufTemp[6] = 0;
-							sendBufTemp[7] = 0;
-
-							sendLen = 8;
-							/* crc */
-							crc = Crc16_1021_Sum(&sendBufTemp[2], sendLen-2);
-							U16_To_BigEndingBuf(&sendBufTemp[0], crc);
-						 
-							RF_Send(sendBufTemp, sendLen);
-							RF_Send("12345678", sendLen);
-						}
-					#endif
 						if (1 == systemPowerFlag)
 						{
 							powerShowChargePercent();
@@ -370,6 +371,25 @@ static void systemMasterTaskFunc(UArg arg0, UArg arg1)
 						Clock_start(Clock_handle(&periodicClock_1s));
 
 						break;
+				#ifdef INCLUDE_RF_MASTER
+					case EVENT_REQUES_OK:
+						Clock_stop(Clock_handle(&periodicClock_SendTimeout));
+					case EVRNT_SEND_NEXT:
+						if (1 == systemPowerFlag)
+						{
+							// 读取已经配对的ID 
+							if (devIDNum)
+							{						
+								rfDataPacking(CMDREQUEST, deviceIDBuf[devCnt-1], NULL, 0);
+								Clock_start(Clock_handle(&periodicClock_SendTimeout));
+								if (devCnt == 0)
+								{
+									devCnt = devIDNum;
+								}
+							}							
+						}
+						break;
+				#endif	
 			//=========== end =======================================			
 					default:
 						break;
@@ -389,7 +409,7 @@ void systemMasterTaskInit(void)
     masterTaskParams.stackSize = 1024;
     masterTaskParams.priority = 2;
     masterTaskParams.stack = &masterTaskStack;
-    masterTaskParams.arg0 = (UInt)10;			// task sleep 10ms
+    masterTaskParams.arg0 = (UInt)1;			// task sleep 10ms
 
     Task_construct(&masterTask, systemMasterTaskFunc, &masterTaskParams, NULL);
 }

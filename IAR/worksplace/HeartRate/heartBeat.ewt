@@ -2147,6 +2147,15 @@
         </file>
       </group>
       <group>
+        <name>int_flash</name>
+        <file>
+          <name>$PROJ_DIR$\Application\Drivers\inter_flash\InternalFlash.c</name>
+        </file>
+        <file>
+          <name>$PROJ_DIR$\Application\Drivers\inter_flash\internalFlash.h</name>
+        </file>
+      </group>
+      <group>
         <name>OLED</name>
         <file>
           <name>$PROJ_DIR$\Application\Drivers\OLED\font.h</name>
@@ -2247,6 +2256,9 @@
       </file>
       <file>
         <name>$PROJ_DIR$\Application\userApp\SystemMasterTask.c</name>
+      </file>
+      <file>
+        <name>$PROJ_DIR$\Application\userApp\systemPara.c</name>
       </file>
       <file>
         <name>$PROJ_DIR$\Application\userApp\UserHeartBeatApp.c</name>

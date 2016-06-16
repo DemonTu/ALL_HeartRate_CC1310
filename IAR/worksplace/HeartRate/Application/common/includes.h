@@ -41,6 +41,7 @@
 
 
 //user app
+#include "systemPara.h"
 
 #include "UserRfApp.h"
 #include "userPowerManage.h"

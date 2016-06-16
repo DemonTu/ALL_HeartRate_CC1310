@@ -175,7 +175,7 @@ typedef struct
 	uint16_t totalSteps;
 	uint16_t speed;
 	uint16_t cals;
-	uint16_t sVO2;			// 耗氧量  单位:10x ml/kg/min
+	uint16_t sVO2;			// 耗氧量  单位:10x ml/kg/min (ml/kg*min)
 	
 }SENSORPARA_STR;
 

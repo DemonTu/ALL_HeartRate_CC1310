@@ -2,8 +2,6 @@
 
 #include "UserRfProtocol.h"
 
-
-
 //无线通信的协议
 
 //协议结构
@@ -37,15 +35,10 @@ typedef struct
 
 #define PROTOCOLHEADBYTE	0xaa
 
-enum
-{
-	CMDNONE    = 0x00,
-	CMDREQUEST = 0x01,
-	CMDSYNC    = 0x02,
-	CMDSACK    = 0x10,
-};
-
-static void rfDataPacking(uint8_t cmd, uint8_t *packBuf, uint16_t len)
+/*
+ * 无线数据封包，发送 
+ */
+void rfDataPacking(uint8_t cmd, uint16_t deviceID, uint8_t *packBuf, uint16_t len)
 {
 	uint8_t sendBufTemp[31];
 	uint16_t sendLen = 0;
@@ -55,7 +48,7 @@ static void rfDataPacking(uint8_t cmd, uint8_t *packBuf, uint16_t len)
 	sendBufTemp[3] = cmd;
 	
 	/*device ID*/
-	U16_To_BigEndingBuf(&sendBufTemp[4], 0xabcd);
+	U16_To_BigEndingBuf(&sendBufTemp[4], deviceID);
 	
 	/* data length */
 	sendBufTemp[6] = 0;
@@ -112,21 +105,24 @@ void RfDataProcess(uint8_t *buf, uint8_t len)
 			sendLen = sizeof(DATASTR);
 			ackFlag = CMDSACK | CMDREQUEST;  
 			break;
-		case CMDSYNC:						 // 同步请求事件
-			ackFlag = CMDSACK | CMDREQUEST;  
+#ifdef INCLUDE_RF_MASTER
+		case CMDSYNC:						 // 主设备收到同步事件
+		
+			ackFlag = CMDSACK | CMDSYNC;  
 			break;
-		case (CMDSACK | CMDREQUEST):	     // 应答事件 
-		#ifdef INCLUDE_RF_MASTER
+		case (CMDSACK | CMDREQUEST):	     // 主设备收到请求应答事件 
+			systemUserEnqueue(EVENT_REQUES_OK, 0,  NULL);
 			uartWriteDebug("ok",2);
-		#endif
+
 			ackFlag = CMDNONE;		
 			break;
+#endif			
 		default:
 			break;
 	}
 	if (CMDNONE != ackFlag)
 	{
-		rfDataPacking(ackFlag, sendBuf, sendLen);
+		rfDataPacking(ackFlag, 0xabcd, sendBuf, sendLen);
 	}
 
 	free(sendBuf);
