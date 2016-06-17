@@ -3,10 +3,13 @@
 
 enum
 {
-	CMDNONE    = 0x00,
-	CMDREQUEST = 0x01,
-	CMDSYNC    = 0x02,
-	CMDSACK    = 0x10,
+	CMDNONE      = 0x00,
+	CMDREQUEST   = 0x01,
+	CMDSYNC      = 0x02,
+	CMDCANCESYNC = 0x03,
+	CMDSETID     = 0x04,
+	CMDSACK    	 = 0x10,
+	
 };
 
 

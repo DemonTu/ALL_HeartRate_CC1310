@@ -7,8 +7,8 @@
 typedef struct 
 {
 	uint8_t  saveFlag;
-	uint16_t devoceId;
 	uint8_t  reserve[1];
+	uint16_t devoceId;
 }SYNCPARA_STR;
 
 SYNCPARA_STR syncPara;

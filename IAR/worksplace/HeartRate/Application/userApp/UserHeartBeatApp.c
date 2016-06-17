@@ -1,5 +1,5 @@
 #include "includes.h"
-
+#ifndef INCLUDE_RF_MASTER
 /********************************************************************************
  * heart Beat driver interface 
  *
@@ -250,6 +250,8 @@ static void sendConmandSet(SETCMDPARA_STR *parameterBuf, uint8_t parameterNum)
 
 /***** Variable declarations *****/
 Task_Struct HRTask;              /* not static so you can see in ROV */
+Task_Handle HRTaskHandle;
+
 static uint8_t HRTaskStack[HRTASKSTACKSIZE];
 
 static SENSORPARA_STR sensorData;
@@ -298,7 +300,8 @@ static void HRTaskFunc(UArg arg0, UArg arg1)
 			sensorData.stepRate   = (registerData[3+7*3+1]<<8)|(registerData[3+7*3+2]);
 			sensorData.distance   = (registerData[3+8*3+1]<<8)|(registerData[3+8*3+2]);
 			sensorData.totalSteps = (registerData[3+9*3+1]<<8)|(registerData[3+9*3+2]);
-			sensorData.speed      = (registerData[3+10*3+1]<<8)|(registerData[3+10*3+2]);
+			/* 英里/小时 转换为 公里/小时 */
+			sensorData.speed      = ((registerData[3+10*3+1]<<8)|(registerData[3+10*3+2]))*16/10000;
 			sensorData.cals       = (registerData[3+11*3+1]<<8)|(registerData[3+11*3+2]);
 			sensorData.sVO2		  = (registerData[3+12*3+1]<<8)|(registerData[3+12*3+2]);
 			
@@ -333,6 +336,7 @@ void HR_TaskInit(void)
     HRTaskParams.arg0 = (UInt)1000;
 
     Task_construct(&HRTask, HRTaskFunc, &HRTaskParams, NULL);
+	HRTaskHandle = Task_handle(&HRTask);
 }
 
 void HR_GetSensorData(SENSORPARA_STR *snrData)
@@ -347,4 +351,5 @@ void HR_CloseSensor(void)
 {
 	sendConmandStop();
 }
+#endif
 

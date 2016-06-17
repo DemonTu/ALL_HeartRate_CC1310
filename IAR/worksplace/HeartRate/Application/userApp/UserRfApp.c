@@ -147,18 +147,18 @@ void rfTxDoneCb(EasyLink_Status status)
     if (status == EasyLink_Status_Success)
     {
         /* Toggle LED1 to indicate TX */
-		uartWriteDebug("TX", 2);
+		bspUartWrite("TX", 2);
     }
     else if(status == EasyLink_Status_Aborted)
     {
         /* Toggle LED2 to indicate command aborted */
-		uartWriteDebug("aborted", 7);
+		bspUartWrite("aborted", 7);
         
     }
     else
     {
         /* Toggle LED1 and LED2 to indicate error */
-		uartWriteDebug("error", 5);
+		bspUartWrite("error", 5);
 
     }
 
@@ -172,7 +172,7 @@ void rfRxDoneCb(EasyLink_RxPacket * rxPacket, EasyLink_Status status)
     {
         /* Toggle LED2 to indicate RX */
 		bspUartWrite("RX=", 3);
-        bspUartWrite(&rxPacket->payload[0], rxPacket->len);
+        //bspUartWrite(&rxPacket->payload[0], rxPacket->len);
 		#if 0
 		{
 			SYS_stEvt_t *tempMsg;
@@ -297,16 +297,18 @@ static void RF_SendData(uint8_t *dat, uint8_t len)
 
 	EasyLink_transmitAsync(&txPacket, rfTxDoneCb);
 	/* Wait 300ms for Tx to complete */
-	if(Semaphore_pend(rfTxDoneSem, (300000 / Clock_tickPeriod)) == FALSE)
+	if(Semaphore_pend(rfTxDoneSem, (500000 / Clock_tickPeriod)) == FALSE)
 	{
+		bspUartWrite("timou", 5);
 		/* TX timed out, abort */
 		if(EasyLink_abort() == EasyLink_Status_Success)
 		{
+			bspUartWrite("abort", 5);
 			/*
 			 * Abort will cause the rfTxDoneCb to be called, and the txDoneSem ti
 			 * Be released. So we must consume the txDoneSem
 			 * */
-		   Semaphore_pend(rfTxDoneSem, BIOS_WAIT_FOREVER);
+		   //Semaphore_pend(rfTxDoneSem, BIOS_WAIT_FOREVER);
 		}
 	}
 }

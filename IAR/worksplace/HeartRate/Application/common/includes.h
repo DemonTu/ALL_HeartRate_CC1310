@@ -33,7 +33,7 @@
 //#include "bsp_spi.h"
 #include "bsp_uart.h"
 #include "OLED_Driver.h"
-#include "UserHeartBeatApp.h"
+
 
 //software tool
 #include "ALSW_BigSmallEnding.h"
@@ -49,6 +49,8 @@
 #include "SystemMasterTask.h"
 #include "OLED_UserApp.h"
 
-
+#ifndef INCLUDE_RF_MASTER
+#include "UserHeartBeatApp.h"
+#endif
 #endif	
 

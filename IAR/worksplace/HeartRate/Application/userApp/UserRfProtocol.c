@@ -68,61 +68,102 @@ void rfDataPacking(uint8_t cmd, uint16_t deviceID, uint8_t *packBuf, uint16_t le
 
 void RfDataProcess(uint8_t *buf, uint8_t len)
 {
-	PROSTR *datHead;
+	PROSTR datHead;
 	uint16_t cmpCrc;
 	uint8_t ackFlag = CMDNONE; 
+#ifndef INCLUDE_RF_MASTER
 	SENSORPARA_STR sendDatTemp;
+#endif
 	uint8_t *sendBuf = (uint8_t *)malloc(sizeof(DATASTR));	
 	uint8_t sendLen = 0;
-	
-	datHead = (PROSTR *)buf;
-	datHead->crc = BigEndingBuf_To_U16(buf);
-	if (datHead->cmdHead != PROTOCOLHEADBYTE)
+	if (len < sizeof(PROSTR))
+	{
+		uartWriteDebug("len err", 7);
+		return;
+	}
+	datHead.crc = BigEndingBuf_To_U16(buf);
+	datHead.cmdHead = buf[2];
+	datHead.cmd = buf[3];		
+	datHead.deviceID = BigEndingBuf_To_U16(&buf[4]);
+	datHead.len = BigEndingBuf_To_U16(&buf[6]);
+	if (datHead.cmdHead != PROTOCOLHEADBYTE)
 	{
 		return;
 	}
 	cmpCrc = Crc16_1021_Sum(&buf[2], len-2);
-	if (datHead->crc != cmpCrc)
+	if (datHead.crc != cmpCrc)
 	{
 		uartWriteDebug("crc", 3);
+		uartWriteDebug(buf, len);		
+		uartWriteDebug((uint8_t *)&cmpCrc, 2);
+		uartWriteDebug((uint8_t *)&datHead.crc, 2);
 		return;
 	}
-	switch(datHead->cmd)
+	switch(datHead.cmd)
 	{
+#ifndef INCLUDE_RF_MASTER	
 		case CMDREQUEST:					 // 请求获取心率事件
-			HR_GetSensorData(&sendDatTemp);
-			/* 读取电池电量 */
-			// powerGetChargeValue();
-			U16_To_BigEndingBuf(sendBuf, powerGetChargeValue());	// 电池电量
-			U16_To_BigEndingBuf(&sendBuf[2],  sendDatTemp.heartRate);
-			U16_To_BigEndingBuf(&sendBuf[4],  sendDatTemp.heartRateAvg);
-			U16_To_BigEndingBuf(&sendBuf[6],  sendDatTemp.stepRate);
-			U16_To_BigEndingBuf(&sendBuf[8],  sendDatTemp.distance);
-			U16_To_BigEndingBuf(&sendBuf[10], sendDatTemp.totalSteps);
-			U16_To_BigEndingBuf(&sendBuf[12], sendDatTemp.speed);
-			U16_To_BigEndingBuf(&sendBuf[14], sendDatTemp.cals);
-			//U16_To_BigEndingBuf(&sendBuf[16], 0x64);
-			sendLen = sizeof(DATASTR);
-			ackFlag = CMDSACK | CMDREQUEST;  
+			if (datHead.deviceID == sysPara.deviceID)
+			{		
+				HR_GetSensorData(&sendDatTemp);
+				/* 读取电池电量 */
+				// powerGetChargeValue();
+				U16_To_BigEndingBuf(sendBuf, powerGetChargeValue());	// 电池电量
+				U16_To_BigEndingBuf(&sendBuf[2],  sendDatTemp.heartRate);
+				U16_To_BigEndingBuf(&sendBuf[4],  sendDatTemp.heartRateAvg);
+				U16_To_BigEndingBuf(&sendBuf[6],  sendDatTemp.stepRate);
+				U16_To_BigEndingBuf(&sendBuf[8],  sendDatTemp.distance);
+				U16_To_BigEndingBuf(&sendBuf[10], sendDatTemp.totalSteps);
+				U16_To_BigEndingBuf(&sendBuf[12], sendDatTemp.speed);
+				U16_To_BigEndingBuf(&sendBuf[14], sendDatTemp.cals);
+				U16_To_BigEndingBuf(&sendBuf[16], sendDatTemp.sVO2);
+				sendLen = sizeof(DATASTR);
+				ackFlag = CMDSACK | CMDREQUEST;  				
+			}
+			else
+			{
+				ackFlag = CMDNONE;  
+			}
 			break;
-#ifdef INCLUDE_RF_MASTER
-		case CMDSYNC:						 // 主设备收到同步事件
-		
+		case (CMDSACK | CMDSYNC):	     // 从设备收到同步应答事件 
+
+			OLED_ShowString(0, 0, "ok");
+
+			ackFlag = CMDNONE;		
+			break;	
+#elif defined (INCLUDE_RF_MASTER)
+		case CMDSYNC:						 // 主设备收到同步事件			
+			syncParaSave(datHead.deviceID);
+			uartWriteDebug("sync",4);
 			ackFlag = CMDSACK | CMDSYNC;  
 			break;
 		case (CMDSACK | CMDREQUEST):	     // 主设备收到请求应答事件 
 			systemUserEnqueue(EVENT_REQUES_OK, 0,  NULL);
+			// 通过串口发送给服务器
+			sendLen = datHead.len;
+			memcpy(sendBuf, &buf[sizeof(PROSTR)], sendLen);
 			uartWriteDebug("ok",2);
-
+			bspUartWrite(sendBuf, sendLen);
 			ackFlag = CMDNONE;		
 			break;
+		case CMDCANCESYNC:
+			// 预留	
+			break;
 #endif			
+		case CMDSETID:
+			sysPara.deviceID = datHead.deviceID;
+			systemParaSave();
+			ackFlag = CMDSACK | CMDSETID;
+			break;
+		case (CMDSACK | CMDSETID):
+			bspUartWrite("set OK", 6);
+			break;
 		default:
 			break;
 	}
 	if (CMDNONE != ackFlag)
 	{
-		rfDataPacking(ackFlag, 0xabcd, sendBuf, sendLen);
+		rfDataPacking(ackFlag, datHead.deviceID, sendBuf, sendLen);
 	}
 
 	free(sendBuf);

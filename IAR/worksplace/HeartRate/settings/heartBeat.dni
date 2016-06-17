@@ -46,7 +46,7 @@ xdsResetStrategy=3
 StopOnUncaught=_ 0
 StopOnThrow=_ 0
 [DebugChecksum]
-Checksum=-1135680185
+Checksum=2016955034
 [CallStack]
 ShowArgs=0
 [Disassembly]
@@ -58,6 +58,10 @@ Sort=4 0
 Enabled=0
 [CallStackStripe]
 ShowTiming=1
+[Disassemble mode]
+mode=0
+[Breakpoints2]
+Count=0
 [Log file]
 LoggingEnabled=_ 0
 LogFile=_ ""
@@ -65,12 +69,6 @@ Category=_ 0
 [TermIOLog]
 LoggingEnabled=_ 0
 LogFile=_ ""
-[Disassemble mode]
-mode=0
-[Breakpoints2]
-Bp0=_ 1 "EMUL_CODE" "{$PROJ_DIR$\Application\userApp\SystemMasterTask.c}.238.3" 0 0 1 "" 0 "" 0
-Bp1=_ 1 "EMUL_CODE" "{$PROJ_DIR$\Application\userApp\UserRfApp.c}.313.1" 0 0 1 "" 0 "" 0
-Count=2
 [Aliases]
 Count=0
 SuppressDialog=0

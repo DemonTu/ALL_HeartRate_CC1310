@@ -46,10 +46,6 @@ int main(void)
 	/* task init*/
 	powerManegeTaskInit();
     systemMasterTaskInit();
-	
-//	OLED_ProcessTaskInit();	
-//	HR_TaskInit();
-//	RF_TaskInit();
 		
     /* Start BIOS */
     BIOS_start();

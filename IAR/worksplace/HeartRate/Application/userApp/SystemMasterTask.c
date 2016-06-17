@@ -110,6 +110,7 @@ void systemUserEnqueue(uint8_t evt, uint8_t datLen, uint8_t *dat)
 	{
 		tempMsg->sysEvent = evt;
 		tempMsg->eData = dat;
+		tempMsg->len = datLen;
 		systemEnqueueMsg(systemQueue, (uint8_t *)tempMsg);
 	}
 }
@@ -185,6 +186,12 @@ static uint8_t masterTaskStack[1024];
 #ifdef INCLUDE_RF_MASTER
 #define DEVICEIDNUM			50
 #endif
+
+enum
+{
+	SYSTEMIDLE = 0,
+	SYSTEMSYNC,
+};
 /*
  * 系统任务
  */
@@ -194,8 +201,11 @@ static void systemMasterTaskFunc(UArg arg0, UArg arg1)
 	uint16_t deviceIDBuf[DEVICEIDNUM];
 	uint16_t devIDNum = 0;	
     uint16_t devCnt = 0;
-	#endif
+	#else
 	uint8_t systemShowStateFlag = HeartRate;	// range = sizeof(SENSORPARA_STR)/2 default: heart beat mode
+	#endif
+	uint8_t sysMode = SYSTEMIDLE;
+	
 	Semaphore_Params semParamsMutex;
     
     uartWriteDebug("system", 6);
@@ -212,7 +222,7 @@ static void systemMasterTaskFunc(UArg arg0, UArg arg1)
 //	systemClockCreate(&periodicClock_500ms, 500, TIME500MS_EVENT);
 	systemClockCreate(&periodicClock_1s, 1000, TIME1S_EVENT);
 #ifdef INCLUDE_RF_MASTER
-	systemClockCreate(&periodicClock_SendTimeout, 350, TIME100MS_EVENT);
+	systemClockCreate(&periodicClock_SendTimeout, 350, TIME350MS_EVENT);
 #endif
 	while(1)
 	{
@@ -226,6 +236,10 @@ static void systemMasterTaskFunc(UArg arg0, UArg arg1)
 				switch(pMsg->sysEvent)
 				{
 					case EVENT_POWERKEY_DOWN:
+						if (sysMode == SYSTEMSYNC)
+						{
+							rfDataPacking(CMDSYNC, sysPara.deviceID, NULL, 0);								
+						}
 						uartWriteDebug("KEYPOWER", 7);
 						break;
 					case EVENT_POWERKEY_LONG:
@@ -234,18 +248,21 @@ static void systemMasterTaskFunc(UArg arg0, UArg arg1)
 							// long key to power on
 							powerOn();
 							systemParaInit();
-							#ifdef INCLUDE_RF_MASTER
+						#ifdef INCLUDE_RF_MASTER
 							// 读取已经配对了几个设备
 							devIDNum = syncParaRead(deviceIDBuf);
                             devCnt = devIDNum;
 							// 延时启动发送无线请求命令
 							Clock_start(Clock_handle(&periodicClock_SendTimeout));
-							#endif
 							
+							OLED_ProcessTaskInit();
+							RF_TaskInit();
+						#else							
 							OLED_ProcessTaskInit();
 							delay_ms(100);
 							HR_TaskInit();
 							RF_TaskInit();
+						#endif	
 							systemPowerFlag = 1;
 							
 						    /* 启动软件定时器 */	
@@ -257,7 +274,9 @@ static void systemMasterTaskFunc(UArg arg0, UArg arg1)
 						{
 							// long key to power off
 							systemPowerFlag = 0;
+						#ifndef INCLUDE_RF_MASTER	
 							HR_CloseSensor();
+						#endif
 							OLED_Clear();
 							powerOff();
 						}
@@ -266,14 +285,26 @@ static void systemMasterTaskFunc(UArg arg0, UArg arg1)
 						RfDataProcess(pMsg->eData, pMsg->len);
 						//uartWriteDebug(pMsg->eData, pMsg->len);
 						break;
+					case EVENT_UART_RECV:
+						if (pMsg->len)
+						{
+							if (memcmp(pMsg->eData, "setID=", 6) == 0)
+							{
+								sysPara.deviceID = BigEndingBuf_To_U16(&pMsg->eData[6]);
+								systemParaSave();
+								bspUartWrite("set OK", 6);
+							}
+						}
+						break;
+				#ifndef INCLUDE_RF_MASTER			
 					case EVENT_SENSOR_HIDE:
-						if (1 == systemPowerFlag)
+						if (1 == systemPowerFlag && sysMode==SYSTEMIDLE)
 						{
 							OLED_ShowString(0, 16, "                ");
 						}
 						break;
 					case EVENT_SENSOR_SHOW:
-						if (1 == systemPowerFlag)
+						if (1 == systemPowerFlag && sysMode==SYSTEMIDLE)
 						{
 							uint8_t showBuf[20]={0};
 							SENSORPARA_STR *sensorDataT;
@@ -296,7 +327,7 @@ static void systemMasterTaskFunc(UArg arg0, UArg arg1)
 									sprintf((char *)showBuf, " %3dsteps", sensorDataT->totalSteps);
 									break;
 								case Speed:
-									sprintf((char *)showBuf, " %3dkm/h", sensorDataT->speed*16/10000);
+									sprintf((char *)showBuf, " %3dkm/h", sensorDataT->speed);
 									break;
 								case CALS:
 									sprintf((char *)showBuf, " %3dkCal", sensorDataT->cals);
@@ -312,7 +343,7 @@ static void systemMasterTaskFunc(UArg arg0, UArg arg1)
 						}
 						break;
 					case EVENT_MENUKEY_DOWN:
-						if (1 == systemPowerFlag)
+						if (1 == systemPowerFlag && sysMode==SYSTEMIDLE)
 						{
 							static uint8_t i = 0;
 							const uint8_t stateTbl[]={\
@@ -355,6 +386,27 @@ static void systemMasterTaskFunc(UArg arg0, UArg arg1)
 							}
 						}				
 						break;
+						
+					case EVENT_MENUKEY_LONG:
+						/* 长按菜单键，切换工作模式 */
+						{
+							static uint8_t flag = 0;
+							
+							flag = !flag; 
+							if (flag)
+							{
+								sysMode = SYSTEMSYNC;
+								OLED_ShowString(0, 0, "         ");
+								OLED_ShowString(0, 16, "     SYNC       ");
+							}
+							else
+							{
+								sysMode = SYSTEMIDLE;
+								systemUserEnqueue(EVENT_MENUKEY_DOWN, 0, NULL);
+							}
+						}
+						break;
+				#endif			
 			//======================================================
 			//=========== 系统定时器 ===============================
 					case EVENT_TIME_100MS:		
@@ -371,6 +423,9 @@ static void systemMasterTaskFunc(UArg arg0, UArg arg1)
 						Clock_start(Clock_handle(&periodicClock_1s));
 
 						break;
+			//============== end ==========================================			
+			//=============================================================		
+				/* 主设备 请求无线数据 */		
 				#ifdef INCLUDE_RF_MASTER
 					case EVENT_REQUES_OK:
 						Clock_stop(Clock_handle(&periodicClock_SendTimeout));

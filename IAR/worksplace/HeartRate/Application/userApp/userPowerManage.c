@@ -119,7 +119,7 @@ uint16_t powerGetChargeValue(void)
 {
 	uint16_t charge;
 	//powerAdcProcess();
-	uartWriteDebug((uint8_t *)&scifTaskData.adcDataLogger.output.head, 2);
+	//uartWriteDebug((uint8_t *)&scifTaskData.adcDataLogger.output.head, 2);
 	if (chargeAvg < 860)
 	{
 		return 0;
@@ -127,7 +127,7 @@ uint16_t powerGetChargeValue(void)
 	else
 	{
 		charge = (chargeAvg - 860) * 100 / 449;
-		uartWriteDebug((uint8_t *)&charge, 2);
+		//uartWriteDebug((uint8_t *)&charge, 2);
 		if (100 < charge)
 		{
 			charge = 100;

@@ -1,6 +1,7 @@
 /*******************************************************************************
  * INCLUDES
  */
+ /*
 #include <ti/sysbios/BIOS.h>
 #include <ti/sysbios/knl/Semaphore.h>
 #include <ti/sysbios/knl/Task.h>
@@ -13,6 +14,10 @@
 #include "Board.h"
 
 #include "bsp_uart.h"
+*/
+#include "includes.h"
+#include <ti/drivers/uart/UARTCC26XX.h>
+
 /***************************************************************************/
 
 /*******************************************************************************
@@ -70,11 +75,13 @@ static void bspUartReadCb(UART_Handle uarthd, void *buf, size_t count)
 	
 	UART_readCancel(uarthd);
 	// process data that uart receive
-		
-//	uartWriteDebug("tt", 2);	
-//  uartWriteDebug(rxBuf, count);
-	
 	UART_read(uarthd, rxBuf, UART_RX_LEN);
+
+	systemUserEnqueue(EVENT_UART_RECV, count, rxBuf);
+//	uartWriteDebug("tt", 2);	
+//	uartWriteDebug(rxBuf, count);
+	
+	
 }
 
 static void bspUartWriteCb(UART_Handle uarthd, void *buf, size_t count)

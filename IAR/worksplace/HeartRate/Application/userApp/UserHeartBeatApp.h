@@ -1,6 +1,6 @@
 #ifndef __USERHEARTBEAT_H
 	#define __USERHEARTBEAT_H
-
+#ifndef INCLUDE_RF_MASTER
 /*************************** Command Data Packet Format *********************
 
 	Byte Format/Order for the PerformTek Protocol
@@ -179,6 +179,7 @@ typedef struct
 	
 }SENSORPARA_STR;
 
+extern Task_Handle HRTaskHandle;
 #if 0
 {
 	1 = Running
@@ -196,4 +197,4 @@ void HR_GetSensorData(SENSORPARA_STR *snrData);
 void HR_CloseSensor(void);
 
 #endif
-
+#endif
